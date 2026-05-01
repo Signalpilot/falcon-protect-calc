@@ -29,11 +29,24 @@
     margin-left: auto;
     margin-right: auto;
   }
+  .header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .header-row h1 { flex: 1; }
   h1 {
     font-size: 18px;
     margin: 0 0 6px;
     color: var(--accent);
   }
+  .lang-toggle {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
+  .lang-toggle:hover { border-color: var(--accent); }
   .sub {
     color: var(--muted);
     font-size: 12px;
@@ -164,67 +177,301 @@
 </head>
 <body>
 
-<h1>🛡 Falcon Protect — Lock Profit Calculator</h1>
-<div class="sub">Enter <em>your actual</em> entry odds + stake. Get exact hedge amounts to lock guaranteed profit. Works offline.</div>
+<div class="header-row">
+  <h1 data-i18n="title">🛡 Falcon Protect — Lock Profit Calculator</h1>
+  <button class="lang-toggle" id="langToggle" onclick="toggleLang()">🇦🇱 Shqip</button>
+</div>
+<div class="sub" data-i18n="sub" data-i18n-html>Enter <em>your actual</em> entry odds + stake. Get exact hedge amounts to lock guaranteed profit. Works offline.</div>
 
 <div class="panel">
-  <div class="section-title">1. Market type</div>
+  <div class="section-title" data-i18n="sec1">1. Market type</div>
   <div class="mode-row">
-    <div class="mode-btn active" data-mode="3way" onclick="setMode('3way')">3-way (Match Odds)</div>
-    <div class="mode-btn" data-mode="2way" onclick="setMode('2way')">2-way (BTTS / O‑U)</div>
+    <div class="mode-btn active" data-mode="3way" onclick="setMode('3way')" data-i18n="mode_3way">3-way (Match Odds)</div>
+    <div class="mode-btn" data-mode="2way" onclick="setMode('2way')" data-i18n="mode_2way">2-way (BTTS / O‑U)</div>
   </div>
   <div class="mode-row">
-    <div class="mode-btn" data-mode="lay" onclick="setMode('lay')">Betfair lay-off</div>
+    <div class="mode-btn" data-mode="lay" onclick="setMode('lay')" data-i18n="mode_lay">Betfair lay-off</div>
   </div>
   <div class="help" id="modeHelp">Back the other 2 outcomes on a normal bookie (Bet365, Betway, etc.)</div>
 </div>
 
 <div class="panel">
-  <div class="section-title">2. Your original bet</div>
-  <label>Original side won at odds</label>
+  <div class="section-title" data-i18n="sec2">2. Your original bet</div>
+  <label data-i18n="lbl_orig_odds">Original side won at odds</label>
   <input type="number" step="0.01" id="origOdds" placeholder="e.g. 1.65" oninput="recalc()">
-  <div class="help">Use YOUR actual matched price. Not the alert's quoted price — they often differ.</div>
+  <div class="help" data-i18n="help_orig_odds">Use YOUR actual matched price. Not the alert's quoted price — they often differ.</div>
 
-  <label>Stake placed (£)</label>
+  <label data-i18n="lbl_orig_stake">Stake placed (£)</label>
   <input type="number" step="0.01" id="origStake" placeholder="e.g. 10" oninput="recalc()">
 </div>
 
 <div class="panel" id="panelHedge">
-  <div class="section-title">3. Current odds on opposite outcomes</div>
+  <div class="section-title" data-i18n="sec3">3. Current odds on opposite outcomes</div>
   <div id="hedge3way">
-    <label>Draw odds (current)</label>
+    <label data-i18n="lbl_draw">Draw odds (current)</label>
     <input type="number" step="0.01" id="drawOdds" placeholder="e.g. 8.40" oninput="recalc()">
-    <label>Other team odds (current)</label>
+    <label data-i18n="lbl_other">Other team odds (current)</label>
     <input type="number" step="0.01" id="awayOdds" placeholder="e.g. 40.00" oninput="recalc()">
   </div>
   <div id="hedge2way" style="display:none">
-    <label>Opposite outcome odds (current)</label>
+    <label data-i18n="lbl_opp">Opposite outcome odds (current)</label>
     <input type="number" step="0.01" id="oppOdds" placeholder="e.g. 1.95" oninput="recalc()">
-    <div class="help">For BTTS: if you backed Yes, enter No odds. For Over/Under: enter the opposite.</div>
+    <div class="help" data-i18n="help_opp">For BTTS: if you backed Yes, enter No odds. For Over/Under: enter the opposite.</div>
   </div>
   <div id="hedgeLay" style="display:none">
-    <label>Lay odds (Betfair Exchange — current)</label>
+    <label data-i18n="lbl_lay">Lay odds (Betfair Exchange — current)</label>
     <input type="number" step="0.01" id="layOdds" placeholder="e.g. 1.17" oninput="recalc()">
-    <div class="help">Betfair's lay price for your original side. Adds the exchange commission below.</div>
-    <label>Exchange commission %</label>
+    <div class="help" data-i18n="help_lay">Betfair's lay price for your original side. Adds the exchange commission below.</div>
+    <label data-i18n="lbl_com">Exchange commission %</label>
     <input type="number" step="0.1" id="commission" value="2" oninput="recalc()">
+  </div>
+</div>
+
+<div class="panel">
+  <div class="section-title"><span data-i18n="sec4">4. Previous hedge legs</span> <span style="color:var(--muted);font-weight:normal" data-i18n="sec4_sub">(optional — for stage-1 → stage-2 layering)</span></div>
+  <div class="help" style="margin-bottom:8px" data-i18n="prior_intro">If you already placed an EARLY WARNING insurance hedge and the line drifted further, enter your existing legs here. Calc subtracts them from the residual hedge math.</div>
+  <div id="prior3way">
+    <div class="row">
+      <div>
+        <label data-i18n="lbl_pdraw_stake">Prior leg on Draw — stake (£)</label>
+        <input type="number" step="0.01" id="priorDrawStake" placeholder="0 if none" oninput="recalc()">
+      </div>
+      <div>
+        <label data-i18n="lbl_at_odds">at odds</label>
+        <input type="number" step="0.01" id="priorDrawOdds" placeholder="e.g. 3.20" oninput="recalc()">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label data-i18n="lbl_paway_stake">Prior leg on Other — stake (£)</label>
+        <input type="number" step="0.01" id="priorAwayStake" placeholder="0 if none" oninput="recalc()">
+      </div>
+      <div>
+        <label data-i18n="lbl_at_odds">at odds</label>
+        <input type="number" step="0.01" id="priorAwayOdds" placeholder="e.g. 4.50" oninput="recalc()">
+      </div>
+    </div>
+  </div>
+  <div id="prior2way" style="display:none">
+    <div class="row">
+      <div>
+        <label data-i18n="lbl_popp_stake">Prior leg on Opposite — stake (£)</label>
+        <input type="number" step="0.01" id="priorOppStake" placeholder="0 if none" oninput="recalc()">
+      </div>
+      <div>
+        <label data-i18n="lbl_at_odds">at odds</label>
+        <input type="number" step="0.01" id="priorOppOdds" placeholder="e.g. 2.20" oninput="recalc()">
+      </div>
+    </div>
+  </div>
+  <div id="priorLay" style="display:none">
+    <div class="row">
+      <div>
+        <label data-i18n="lbl_play_stake">Prior lay leg — stake (£)</label>
+        <input type="number" step="0.01" id="priorLayStake" placeholder="0 if none" oninput="recalc()">
+      </div>
+      <div>
+        <label data-i18n="lbl_play_odds">at lay odds</label>
+        <input type="number" step="0.01" id="priorLayOdds" placeholder="e.g. 1.40" oninput="recalc()">
+      </div>
+    </div>
   </div>
 </div>
 
 <div id="output"></div>
 
 <details>
-  <summary>How the math works</summary>
-  <div class="help" style="margin-top:8px">
+  <summary data-i18n="how_summary">How the math works</summary>
+  <div class="help" style="margin-top:8px" id="howBody" data-i18n-html="how_body">
     <strong>3-way / 2-way back-hedge:</strong> set each opposite-leg stake so that the return on each outcome equals the original side's return. Stake on outcome i = (orig_stake × orig_odds) ÷ outcome_i_odds. Total cost = sum of stakes. Locked profit = (orig_stake × orig_odds) − total_cost. Same profit regardless of which outcome lands.<br><br>
     <strong>Betfair lay:</strong> lay_stake = (orig_stake × orig_odds) ÷ (lay_odds − commission_factor). Lay liability = lay_stake × (lay_odds − 1). Locked profit ≈ orig_stake × orig_odds − orig_stake − lay_liability + lay_stake × (1 − commission).<br><br>
     The number of pounds you actually have at risk is the total of all stakes (3-way/2-way) or original stake + lay liability (Betfair). Calculator shows both.
   </div>
 </details>
 
-<div class="footer">Falcon Protect Calc · saved offline-ready · v1</div>
+<div class="footer" data-i18n="footer">Falcon Protect Calc · saved offline-ready · v2</div>
 
 <script>
+// ─────────────────────────────────────────────────────────────────────
+//  i18n
+// ─────────────────────────────────────────────────────────────────────
+
+const TRANSLATIONS = {
+  en: {
+    title:        "🛡 Falcon Protect — Lock Profit Calculator",
+    sub:          "Enter <em>your actual</em> entry odds + stake. Get exact hedge amounts to lock guaranteed profit. Works offline.",
+    sec1:         "1. Market type",
+    sec2:         "2. Your original bet",
+    sec3:         "3. Current odds on opposite outcomes",
+    sec4:         "4. Previous hedge legs",
+    sec4_sub:     "(optional — for stage-1 → stage-2 layering)",
+    mode_3way:    "3-way (Match Odds)",
+    mode_2way:    "2-way (BTTS / O‑U)",
+    mode_lay:     "Betfair lay-off",
+    mode_help_3way: "Back the other 2 outcomes on a normal bookie (Bet365, Betway, etc.)",
+    mode_help_2way: "Back the opposite outcome on a normal bookie. Locks profit if hedge odds high enough.",
+    mode_help_lay:  "Lay your original side on Betfair Exchange. Most efficient if available.",
+    lbl_orig_odds:  "Original side won at odds",
+    lbl_orig_stake: "Stake placed (£)",
+    help_orig_odds: "Use YOUR actual matched price. Not the alert's quoted price — they often differ.",
+    lbl_draw:       "Draw odds (current)",
+    lbl_other:      "Other team odds (current)",
+    lbl_opp:        "Opposite outcome odds (current)",
+    help_opp:       "For BTTS: if you backed Yes, enter No odds. For Over/Under: enter the opposite.",
+    lbl_lay:        "Lay odds (Betfair Exchange — current)",
+    help_lay:       "Betfair's lay price for your original side. Adds the exchange commission below.",
+    lbl_com:        "Exchange commission %",
+    prior_intro:    "If you already placed an EARLY WARNING insurance hedge and the line drifted further, enter your existing legs here. Calc subtracts them from the residual hedge math.",
+    lbl_pdraw_stake: "Prior leg on Draw — stake (£)",
+    lbl_paway_stake: "Prior leg on Other — stake (£)",
+    lbl_popp_stake:  "Prior leg on Opposite — stake (£)",
+    lbl_play_stake:  "Prior lay leg — stake (£)",
+    lbl_play_odds:   "at lay odds",
+    lbl_at_odds:     "at odds",
+    how_summary:     "How the math works",
+    how_body:        "<strong>3-way / 2-way back-hedge:</strong> set each opposite-leg stake so that the return on each outcome equals the original side's return. Stake on outcome i = (orig_stake × orig_odds) ÷ outcome_i_odds. Total cost = sum of stakes. Locked profit = (orig_stake × orig_odds) − total_cost. Same profit regardless of which outcome lands.<br><br><strong>Betfair lay:</strong> lay_stake = (orig_stake × orig_odds) ÷ (lay_odds − commission_factor). Lay liability = lay_stake × (lay_odds − 1). Locked profit ≈ orig_stake × orig_odds − orig_stake − lay_liability + lay_stake × (1 − commission).<br><br>The number of pounds you actually have at risk is the total of all stakes (3-way/2-way) or original stake + lay liability (Betfair). Calculator shows both.",
+    footer:         "Falcon Protect Calc · saved offline-ready · v2",
+    // result rendering
+    res_guaranteed:  "GUARANTEED PROFIT",
+    res_negative:    "NEGATIVE LOCK — would lose money",
+    res_locked:      "LOCKED PROFIT",
+    res_total_cost:  "Total cost (all stakes)",
+    res_total_risk:  "Total at risk",
+    res_payout:      "Payout on any winner",
+    res_orig:        "Original (already placed)",
+    res_back_draw:   "BACK the Draw",
+    res_back_other:  "BACK the other team",
+    res_back_opp:    "BACK the opposite",
+    res_new_back_draw: "NEW: BACK the Draw",
+    res_new_back_other:"NEW: BACK the other team",
+    res_new_back_opp:  "NEW: BACK the opposite",
+    res_lay:           "LAY on Betfair",
+    res_new_lay:       "NEW: LAY on Betfair",
+    res_prior_lay:     "Prior LAY (already placed)",
+    res_prior_draw:    "Prior leg on Draw (already placed)",
+    res_prior_other:   "Prior leg on Other (already placed)",
+    res_prior_opp:     "Prior leg on Opposite (already placed)",
+    res_com_rate:      "Commission rate",
+    res_if_orig_wins:  "If original wins",
+    res_if_lay_wins:   "If lay wins",
+    res_covers_if:     "covers",
+    res_if:            "if",
+    res_of_orig:       "of orig",
+    res_of_stake:      "of stake",
+    res_if_staked:     "If you'd staked",
+    err_orig:          "Enter your original odds (>1.0) and stake (>0).",
+    err_3way:          "Enter both Draw and other-team odds (>1.0).",
+    err_2way:          "Enter opposite outcome odds (>1.0).",
+    err_lay:           "Enter Betfair lay odds (>1.0).",
+    lang_btn_en:       "🇦🇱 Shqip",
+    lang_btn_sq:       "🇬🇧 English",
+  },
+  sq: {
+    title:        "🛡 Falcon Protect — Llogaritësi i Fitimit të Garantuar",
+    sub:          "Vendos kuotat <em>e tua reale</em> të hyrjes + bastin. Merr shumat e sakta për të bllokuar fitim të garantuar. Funksionon edhe pa internet.",
+    sec1:         "1. Lloji i tregut",
+    sec2:         "2. Basti yt origjinal",
+    sec3:         "3. Kuotat aktuale për rezultatet e kundërta",
+    sec4:         "4. Bastet paraprake mbrojtëse",
+    sec4_sub:     "(opsionale — për shtimin stage-1 → stage-2)",
+    mode_3way:    "3-rezultate (Fitues/Barazim/Humbës)",
+    mode_2way:    "2-rezultate (Po/Jo, Mbi/Nën)",
+    mode_lay:     "Betfair lay-off",
+    mode_help_3way: "Vendos basti tek dy rezultatet e tjera te një bookie i zakonshëm (Bet365, Betway, etj.)",
+    mode_help_2way: "Vendos basti tek rezultati i kundërt. Bllokon fitim nëse kuotat janë të larta sa duhet.",
+    mode_help_lay:  "Bëj lay anën tënde origjinale në Betfair Exchange. Mënyra më efikase nëse e ke këtë opsion.",
+    lbl_orig_odds:  "Ana origjinale, e luajtur me kuotë",
+    lbl_orig_stake: "Bastir i vendosur (£)",
+    help_orig_odds: "Përdor kuotën TËNDE reale, jo atë që kishte alerti — shpesh ndryshojnë.",
+    lbl_draw:       "Kuotat e Barazimit (aktuale)",
+    lbl_other:      "Kuotat e ekipit tjetër (aktuale)",
+    lbl_opp:        "Kuotat e rezultatit të kundërt (aktuale)",
+    help_opp:       "Për BTTS: nëse luajte Po, vendos kuotat e Jo. Për Mbi/Nën: vendos kuotat e të kundërtës.",
+    lbl_lay:        "Kuotat lay (Betfair Exchange — aktuale)",
+    help_lay:       "Kuota lay e Betfair për anën tënde origjinale. Komisioni i exchange-it shtohet më poshtë.",
+    lbl_com:        "Komisioni i exchange-it %",
+    prior_intro:    "Nëse ke vendosur tashmë një bast EARLY WARNING dhe linja ka lëvizur më tej, vendos bastet ekzistuese këtu. Llogaritësi i zbret nga matematika e bastit të ri mbrojtës.",
+    lbl_pdraw_stake: "Basti paraprak në Barazim — vlera (£)",
+    lbl_paway_stake: "Basti paraprak në Tjetrin — vlera (£)",
+    lbl_popp_stake:  "Basti paraprak në të Kundërtin — vlera (£)",
+    lbl_play_stake:  "Basti paraprak lay — vlera (£)",
+    lbl_play_odds:   "me kuotë lay",
+    lbl_at_odds:     "me kuotë",
+    how_summary:     "Si funksionon matematika",
+    how_body:        "<strong>Mbrojtje 3-rezultate / 2-rezultate:</strong> vendos secilin bast kundër ashtu që kthimi në secilin rezultat të jetë i barabartë me kthimin e bastit origjinal. Basti për rezultatin i = (vlera_origjinale × kuota_origjinale) ÷ kuota_e_rezultatit_i. Kostoja totale = shuma e bastsve. Fitimi i bllokuar = (vlera_origjinale × kuota_origjinale) − kostoja_totale. I njëjti fitim, pa marrë parasysh cili rezultat fiton.<br><br><strong>Betfair lay:</strong> basti_lay = (vlera × kuota) ÷ (kuota_lay − komisioni). Detyrimi lay = basti_lay × (kuota_lay − 1). Fitimi i bllokuar ≈ vlera × kuota − vlera − detyrimi_lay + basti_lay × (1 − komisioni).<br><br>Shuma që në të vërtetë rrezikohet është totali i të gjitha bastsve (3-rezultate/2-rezultate) ose vlera origjinale + detyrimi lay (Betfair). Llogaritësi i tregon të dyja.",
+    footer:         "Falcon Protect Calc · ruajtur pa internet · v2",
+    res_guaranteed:  "FITIM I GARANTUAR",
+    res_negative:    "BLLOKIM NEGATIV — do të humbiste para",
+    res_locked:      "FITIMI I BLLOKUAR",
+    res_total_cost:  "Kostoja totale (të gjitha bastet)",
+    res_total_risk:  "Totali që rrezikohet",
+    res_payout:      "Pagesa kur fiton ndonjë rezultat",
+    res_orig:        "Origjinali (i vendosur tashmë)",
+    res_back_draw:   "VENDOS bast në Barazim",
+    res_back_other:  "VENDOS bast në ekipin tjetër",
+    res_back_opp:    "VENDOS bast në të kundërtin",
+    res_new_back_draw: "I RI: VENDOS bast në Barazim",
+    res_new_back_other:"I RI: VENDOS bast në ekipin tjetër",
+    res_new_back_opp:  "I RI: VENDOS bast në të kundërtin",
+    res_lay:           "LAY në Betfair",
+    res_new_lay:       "I RI: LAY në Betfair",
+    res_prior_lay:     "LAY paraprak (i vendosur tashmë)",
+    res_prior_draw:    "Basti paraprak në Barazim (i vendosur tashmë)",
+    res_prior_other:   "Basti paraprak në Tjetrin (i vendosur tashmë)",
+    res_prior_opp:     "Basti paraprak në të Kundërtin (i vendosur tashmë)",
+    res_com_rate:      "Norma e komisionit",
+    res_if_orig_wins:  "Nëse fiton origjinali",
+    res_if_lay_wins:   "Nëse fiton lay-i",
+    res_covers_if:     "mbulon",
+    res_if:            "nëse",
+    res_of_orig:       "e origjinalit",
+    res_of_stake:      "e bastit",
+    res_if_staked:     "Nëse kishe vendosur",
+    err_orig:          "Vendos kuotat e tua origjinale (>1.0) dhe bastin (>0).",
+    err_3way:          "Vendos kuotat e Barazimit dhe ekipit tjetër (>1.0).",
+    err_2way:          "Vendos kuotat e rezultatit të kundërt (>1.0).",
+    err_lay:           "Vendos kuotat lay të Betfair (>1.0).",
+    lang_btn_en:       "🇦🇱 Shqip",
+    lang_btn_sq:       "🇬🇧 English",
+  },
+};
+
+let lang = 'en';
+function t(key) {
+  return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || (TRANSLATIONS.en[key] || key);
+}
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (TRANSLATIONS[lang] && TRANSLATIONS[lang][k] !== undefined) {
+      el.textContent = TRANSLATIONS[lang][k];
+    }
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.getAttribute('data-i18n-html') || el.getAttribute('data-i18n');
+    if (TRANSLATIONS[lang] && TRANSLATIONS[lang][k] !== undefined) {
+      el.innerHTML = TRANSLATIONS[lang][k];
+    }
+  });
+  document.getElementById('langToggle').textContent = lang === 'en' ? t('lang_btn_en') : t('lang_btn_sq');
+  // Mode help refresh
+  const helpKey = mode === '3way' ? 'mode_help_3way' : (mode === '2way' ? 'mode_help_2way' : 'mode_help_lay');
+  document.getElementById('modeHelp').textContent = t(helpKey);
+  recalc();
+}
+
+function toggleLang() {
+  lang = (lang === 'en') ? 'sq' : 'en';
+  try { localStorage.setItem('falcon_calc_lang', lang); } catch(e) {}
+  applyLang();
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  Calculator core
+// ─────────────────────────────────────────────────────────────────────
+
 let mode = '3way';
 
 function setMode(m) {
@@ -233,12 +480,11 @@ function setMode(m) {
   document.getElementById('hedge3way').style.display = m === '3way' ? 'block' : 'none';
   document.getElementById('hedge2way').style.display = m === '2way' ? 'block' : 'none';
   document.getElementById('hedgeLay').style.display = m === 'lay' ? 'block' : 'none';
-  const helps = {
-    '3way': 'Back the other 2 outcomes on a normal bookie (Bet365, Betway, etc.)',
-    '2way': 'Back the opposite outcome on a normal bookie. Locks profit if hedge odds high enough.',
-    'lay':  'Lay your original side on Betfair Exchange. Most efficient if available.'
-  };
-  document.getElementById('modeHelp').textContent = helps[m];
+  document.getElementById('prior3way').style.display = m === '3way' ? 'block' : 'none';
+  document.getElementById('prior2way').style.display = m === '2way' ? 'block' : 'none';
+  document.getElementById('priorLay').style.display = m === 'lay' ? 'block' : 'none';
+  const helpKey = m === '3way' ? 'mode_help_3way' : (m === '2way' ? 'mode_help_2way' : 'mode_help_lay');
+  document.getElementById('modeHelp').textContent = t(helpKey);
   recalc();
 }
 
@@ -263,7 +509,7 @@ function recalc() {
   const O = num('origOdds');
   const S = num('origStake');
   if (!O || !S || O <= 1.0 || S <= 0) {
-    out.innerHTML = '<div class="errmsg" style="padding:12px">Enter your original odds (>1.0) and stake (>0).</div>';
+    out.innerHTML = '<div class="errmsg" style="padding:12px">' + t('err_orig') + '</div>';
     return;
   }
   const targetReturn = S * O;
@@ -271,21 +517,34 @@ function recalc() {
   if (mode === '3way') {
     const oD = num('drawOdds'), oA = num('awayOdds');
     if (!oD || !oA || oD <= 1.0 || oA <= 1.0) {
-      out.innerHTML = '<div class="errmsg" style="padding:12px">Enter both Draw and other-team odds (>1.0).</div>';
+      out.innerHTML = '<div class="errmsg" style="padding:12px">' + t('err_3way') + '</div>';
       return;
     }
-    const xD = targetReturn / oD;
-    const xA = targetReturn / oA;
-    const totalCost = S + xD + xA;
+    const pDS = num('priorDrawStake') || 0, pDO = num('priorDrawOdds') || 0;
+    const pAS = num('priorAwayStake') || 0, pAO = num('priorAwayOdds') || 0;
+    const priorPayoutD = pDS > 0 && pDO > 1.0 ? pDS * pDO : 0;
+    const priorPayoutA = pAS > 0 && pAO > 1.0 ? pAS * pAO : 0;
+    const priorStakeTotal = pDS + pAS;
+    const xD = Math.max(0, (targetReturn - priorPayoutD) / oD);
+    const xA = Math.max(0, (targetReturn - priorPayoutA) / oA);
+    const totalCost = S + priorStakeTotal + xD + xA;
     const lockedProfit = targetReturn - totalCost;
     const lockedPct = (lockedProfit / S) * 100;
+    const legs = [
+      { label: t('res_orig'), val: fmtGBP(S) + ' @ ' + O.toFixed(2) },
+    ];
+    if (pDS > 0 && pDO > 1.0) {
+      legs.push({ label: t('res_prior_draw'), val: fmtGBP(pDS) + ' @ ' + pDO.toFixed(2) + '  → ' + t('res_covers_if') + ' ' + fmtGBP(priorPayoutD) });
+    }
+    if (pAS > 0 && pAO > 1.0) {
+      legs.push({ label: t('res_prior_other'), val: fmtGBP(pAS) + ' @ ' + pAO.toFixed(2) + '  → ' + t('res_covers_if') + ' ' + fmtGBP(priorPayoutA) });
+    }
+    const newDrawLabel = (pDS > 0) ? t('res_new_back_draw') : t('res_back_draw');
+    const newOtherLabel = (pAS > 0) ? t('res_new_back_other') : t('res_back_other');
+    legs.push({ label: newDrawLabel, val: fmtGBP(xD) + ' @ ' + oD.toFixed(2) + '  (' + ((xD/S)*100).toFixed(1) + '% ' + t('res_of_orig') + ')' });
+    legs.push({ label: newOtherLabel, val: fmtGBP(xA) + ' @ ' + oA.toFixed(2) + '  (' + ((xA/S)*100).toFixed(1) + '% ' + t('res_of_orig') + ')' });
     out.innerHTML = renderResult({
-      legs: [
-        { label: 'Original (already placed)', val: fmtGBP(S) + ' @ ' + O.toFixed(2) },
-        { label: 'BACK the Draw', val: fmtGBP(xD) + ' @ ' + oD.toFixed(2) + '  (' + ((xD/S)*100).toFixed(1) + '% of orig)' },
-        { label: 'BACK the other team', val: fmtGBP(xA) + ' @ ' + oA.toFixed(2) + '  (' + ((xA/S)*100).toFixed(1) + '% of orig)' },
-      ],
-      totalCost, lockedProfit, lockedPct,
+      legs, totalCost, lockedProfit, lockedPct,
       payoutOnAny: targetReturn,
       bankrollLadder: true,
     });
@@ -293,19 +552,25 @@ function recalc() {
   else if (mode === '2way') {
     const oOpp = num('oppOdds');
     if (!oOpp || oOpp <= 1.0) {
-      out.innerHTML = '<div class="errmsg" style="padding:12px">Enter opposite outcome odds (>1.0).</div>';
+      out.innerHTML = '<div class="errmsg" style="padding:12px">' + t('err_2way') + '</div>';
       return;
     }
-    const xOpp = targetReturn / oOpp;
-    const totalCost = S + xOpp;
+    const pOS = num('priorOppStake') || 0, pOO = num('priorOppOdds') || 0;
+    const priorPayoutOpp = pOS > 0 && pOO > 1.0 ? pOS * pOO : 0;
+    const xOpp = Math.max(0, (targetReturn - priorPayoutOpp) / oOpp);
+    const totalCost = S + pOS + xOpp;
     const lockedProfit = targetReturn - totalCost;
     const lockedPct = (lockedProfit / S) * 100;
+    const legs = [
+      { label: t('res_orig'), val: fmtGBP(S) + ' @ ' + O.toFixed(2) },
+    ];
+    if (pOS > 0 && pOO > 1.0) {
+      legs.push({ label: t('res_prior_opp'), val: fmtGBP(pOS) + ' @ ' + pOO.toFixed(2) + '  → ' + t('res_covers_if') + ' ' + fmtGBP(priorPayoutOpp) });
+    }
+    const newOppLabel = (pOS > 0) ? t('res_new_back_opp') : t('res_back_opp');
+    legs.push({ label: newOppLabel, val: fmtGBP(xOpp) + ' @ ' + oOpp.toFixed(2) + '  (' + ((xOpp/S)*100).toFixed(1) + '% ' + t('res_of_orig') + ')' });
     out.innerHTML = renderResult({
-      legs: [
-        { label: 'Original (already placed)', val: fmtGBP(S) + ' @ ' + O.toFixed(2) },
-        { label: 'BACK the opposite', val: fmtGBP(xOpp) + ' @ ' + oOpp.toFixed(2) + '  (' + ((xOpp/S)*100).toFixed(1) + '% of orig)' },
-      ],
-      totalCost, lockedProfit, lockedPct,
+      legs, totalCost, lockedProfit, lockedPct,
       payoutOnAny: targetReturn,
       bankrollLadder: true,
     });
@@ -314,24 +579,33 @@ function recalc() {
     const oL = num('layOdds');
     const com = (num('commission') || 0) / 100;
     if (!oL || oL <= 1.0) {
-      out.innerHTML = '<div class="errmsg" style="padding:12px">Enter Betfair lay odds (>1.0).</div>';
+      out.innerHTML = '<div class="errmsg" style="padding:12px">' + t('err_lay') + '</div>';
       return;
     }
-    const layStake = targetReturn / (oL - com);
+    const pLS = num('priorLayStake') || 0, pLO = num('priorLayOdds') || 0;
+    const hasPriorLay = pLS > 0 && pLO > 1.0;
+    const priorLayLiability = hasPriorLay ? pLS * (pLO - 1) : 0;
+    const priorLayProfitIfLayWins  = pLS * (1 - com);
+    const layStake = Math.max(0, (S * O - priorLayLiability - priorLayProfitIfLayWins) / (oL - com));
     const layLiability = layStake * (oL - 1);
-    const profitIfOrigWins = (S * (O - 1)) - layLiability;
-    const profitIfLayWins = layStake * (1 - com) - S;
+    const profitIfOrigWins = (S * (O - 1)) - priorLayLiability - layLiability;
+    const profitIfLayWins  = priorLayProfitIfLayWins + layStake * (1 - com) - S;
     const lockedProfit = Math.min(profitIfOrigWins, profitIfLayWins);
     const lockedPct = (lockedProfit / S) * 100;
-    const totalAtRisk = S + layLiability;
+    const totalAtRisk = S + priorLayLiability + layLiability;
+    const legs = [
+      { label: t('res_orig'), val: fmtGBP(S) + ' @ ' + O.toFixed(2) },
+    ];
+    if (hasPriorLay) {
+      legs.push({ label: t('res_prior_lay'), val: fmtGBP(pLS) + ' @ ' + pLO.toFixed(2) });
+    }
+    const newLayLabel = hasPriorLay ? t('res_new_lay') : t('res_lay');
+    legs.push({ label: newLayLabel, val: fmtGBP(layStake) + ' @ ' + oL.toFixed(2) });
+    legs.push({ label: t('res_com_rate'), val: (com*100).toFixed(1) + '%' });
+    legs.push({ label: t('res_if_orig_wins'), val: fmtGBP(profitIfOrigWins) });
+    legs.push({ label: t('res_if_lay_wins'),  val: fmtGBP(profitIfLayWins) });
     out.innerHTML = renderResult({
-      legs: [
-        { label: 'Original (already placed)', val: fmtGBP(S) + ' @ ' + O.toFixed(2) },
-        { label: 'LAY on Betfair', val: fmtGBP(layStake) + ' @ ' + oL.toFixed(2) + '  (liability ' + fmtGBP(layLiability) + ')' },
-        { label: 'Commission rate', val: (com*100).toFixed(1) + '%' },
-        { label: 'If original wins', val: fmtGBP(profitIfOrigWins) },
-        { label: 'If lay wins', val: fmtGBP(profitIfLayWins) },
-      ],
+      legs,
       totalCost: totalAtRisk,
       lockedProfit, lockedPct,
       payoutOnAny: null,
@@ -344,7 +618,7 @@ function recalc() {
 function renderResult(r) {
   const isPositive = r.lockedProfit > 0;
   const headerEmoji = isPositive ? '🟢' : '🔴';
-  const headerText = isPositive ? 'GUARANTEED PROFIT' : 'NEGATIVE LOCK — would lose money';
+  const headerText = isPositive ? t('res_guaranteed') : t('res_negative');
   const klass = isPositive ? 'result' : 'result bad';
 
   let legHtml = r.legs.map(l =>
@@ -359,16 +633,16 @@ function renderResult(r) {
       ladderHtml = '<div class="ladder">';
       for (const ex of examples) {
         const pct = r.lockedProfit / S;
-        ladderHtml += `<div class="ladder-row"><span>If you'd staked £${ex}</span><span class="v">→ +${fmtGBP(ex*pct)}</span></div>`;
+        ladderHtml += `<div class="ladder-row"><span>${t('res_if_staked')} £${ex}</span><span class="v">→ +${fmtGBP(ex*pct)}</span></div>`;
       }
       ladderHtml += '</div>';
     }
   }
 
   const totalLine = r.isLay
-    ? `<div class="total-row"><span class="leg-label">Total at risk</span><span class="leg-val">${fmtGBP(r.totalCost)}</span></div>`
-    : `<div class="total-row"><span class="leg-label">Total cost (all stakes)</span><span class="leg-val">${fmtGBP(r.totalCost)}</span></div>` +
-      `<div class="total-row"><span class="leg-label">Payout on any winner</span><span class="leg-val">${fmtGBP(r.payoutOnAny)}</span></div>`;
+    ? `<div class="total-row"><span class="leg-label">${t('res_total_risk')}</span><span class="leg-val">${fmtGBP(r.totalCost)}</span></div>`
+    : `<div class="total-row"><span class="leg-label">${t('res_total_cost')}</span><span class="leg-val">${fmtGBP(r.totalCost)}</span></div>` +
+      `<div class="total-row"><span class="leg-label">${t('res_payout')}</span><span class="leg-val">${fmtGBP(r.payoutOnAny)}</span></div>`;
 
   return `
     <div class="${klass}">
@@ -376,15 +650,17 @@ function renderResult(r) {
       ${legHtml}
       ${totalLine}
       <div class="total-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px">
-        <span class="leg-label">LOCKED PROFIT</span>
-        <span class="leg-val" style="font-size:18px">${fmtGBP(r.lockedProfit)} (${fmtPct(r.lockedPct)} of stake)</span>
+        <span class="leg-label">${t('res_locked')}</span>
+        <span class="leg-val" style="font-size:18px">${fmtGBP(r.lockedProfit)} (${fmtPct(r.lockedPct)} ${t('res_of_stake')})</span>
       </div>
       ${ladderHtml}
     </div>
   `;
 }
 
-// URL param pre-fill (for one-tap from Telegram bot PROTECT button)
+// ─────────────────────────────────────────────────────────────────────
+//  URL param pre-fill (Telegram bot button → calc opens with values)
+// ─────────────────────────────────────────────────────────────────────
 function loadFromURL() {
   const p = new URLSearchParams(window.location.search);
   const m = p.get('mode');
@@ -400,6 +676,25 @@ function loadFromURL() {
   set('oppOdds', 'opp');
   set('layOdds', 'lay');
   set('commission', 'com');
+  set('priorDrawStake', 'pd_s');
+  set('priorDrawOdds',  'pd_o');
+  set('priorAwayStake', 'pa_s');
+  set('priorAwayOdds',  'pa_o');
+  set('priorOppStake',  'po_s');
+  set('priorOppOdds',   'po_o');
+  set('priorLayStake',  'pl_s');
+  set('priorLayOdds',   'pl_o');
+  // Lang from URL or localStorage
+  const urlLang = p.get('lang');
+  if (urlLang === 'sq' || urlLang === 'en') {
+    lang = urlLang;
+  } else {
+    try {
+      const stored = localStorage.getItem('falcon_calc_lang');
+      if (stored === 'sq' || stored === 'en') lang = stored;
+    } catch(e) {}
+  }
+  applyLang();
   recalc();
 }
 

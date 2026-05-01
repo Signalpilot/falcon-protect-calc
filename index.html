@@ -384,7 +384,27 @@ function renderResult(r) {
   `;
 }
 
+// URL param pre-fill (for one-tap from Telegram bot PROTECT button)
+function loadFromURL() {
+  const p = new URLSearchParams(window.location.search);
+  const m = p.get('mode');
+  if (m === '3way' || m === '2way' || m === 'lay') setMode(m);
+  const set = (id, key) => {
+    const v = p.get(key);
+    if (v && !isNaN(parseFloat(v))) document.getElementById(id).value = v;
+  };
+  set('origOdds', 'orig');
+  set('origStake', 'stake');
+  set('drawOdds', 'draw');
+  set('awayOdds', 'away');
+  set('oppOdds', 'opp');
+  set('layOdds', 'lay');
+  set('commission', 'com');
+  recalc();
+}
+
 setMode('3way');
+loadFromURL();
 </script>
 
 </body>

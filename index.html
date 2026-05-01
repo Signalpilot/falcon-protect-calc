@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Falcon Protect Calculator</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --panel: #15161a;
+    --border: #2a2c33;
+    --text: #e6e6e8;
+    --muted: #8b8e96;
+    --accent: #f9a23c;
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  h1 {
+    font-size: 18px;
+    margin: 0 0 6px;
+    color: var(--accent);
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .mode-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 8px 4px;
+    background: #1f2128;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .mode-btn.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+  label {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 4px;
+    margin-top: 8px;
+  }
+  input[type=number], input[type=text] {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    background: #1f2128;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    -moz-appearance: textfield;
+  }
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  .result {
+    background: #14201a;
+    border: 1px solid #1f4d3a;
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 14px;
+  }
+  .result.bad {
+    background: #2a1416;
+    border-color: #5a2126;
+  }
+  .result h2 {
+    font-size: 14px;
+    margin: 0 0 10px;
+    color: var(--green);
+  }
+  .result.bad h2 { color: var(--red); }
+  .leg {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px dashed #2a3a30;
+    font-size: 14px;
+  }
+  .leg:last-child { border-bottom: none; }
+  .leg-label { color: var(--muted); }
+  .leg-val { font-weight: 600; color: var(--text); }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0 0;
+    margin-top: 6px;
+    border-top: 1px solid #2a3a30;
+  }
+  .total-row .leg-val {
+    color: var(--green);
+    font-size: 16px;
+  }
+  .ladder {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .ladder-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+  }
+  .ladder-row .v { color: var(--text); }
+  .help {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.35;
+  }
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 20px;
+    padding-bottom: 20px;
+  }
+  .errmsg { color: var(--red); font-size: 12px; margin-top: 6px; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 12px; padding: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>🛡 Falcon Protect — Lock Profit Calculator</h1>
+<div class="sub">Enter <em>your actual</em> entry odds + stake. Get exact hedge amounts to lock guaranteed profit. Works offline.</div>
+
+<div class="panel">
+  <div class="section-title">1. Market type</div>
+  <div class="mode-row">
+    <div class="mode-btn active" data-mode="3way" onclick="setMode('3way')">3-way (Match Odds)</div>
+    <div class="mode-btn" data-mode="2way" onclick="setMode('2way')">2-way (BTTS / O‑U)</div>
+  </div>
+  <div class="mode-row">
+    <div class="mode-btn" data-mode="lay" onclick="setMode('lay')">Betfair lay-off</div>
+  </div>
+  <div class="help" id="modeHelp">Back the other 2 outcomes on a normal bookie (Bet365, Betway, etc.)</div>
+</div>
+
+<div class="panel">
+  <div class="section-title">2. Your original bet</div>
+  <label>Original side won at odds</label>
+  <input type="number" step="0.01" id="origOdds" placeholder="e.g. 1.65" oninput="recalc()">
+  <div class="help">Use YOUR actual matched price. Not the alert's quoted price — they often differ.</div>
+
+  <label>Stake placed (£)</label>
+  <input type="number" step="0.01" id="origStake" placeholder="e.g. 10" oninput="recalc()">
+</div>
+
+<div class="panel" id="panelHedge">
+  <div class="section-title">3. Current odds on opposite outcomes</div>
+  <div id="hedge3way">
+    <label>Draw odds (current)</label>
+    <input type="number" step="0.01" id="drawOdds" placeholder="e.g. 8.40" oninput="recalc()">
+    <label>Other team odds (current)</label>
+    <input type="number" step="0.01" id="awayOdds" placeholder="e.g. 40.00" oninput="recalc()">
+  </div>
+  <div id="hedge2way" style="display:none">
+    <label>Opposite outcome odds (current)</label>
+    <input type="number" step="0.01" id="oppOdds" placeholder="e.g. 1.95" oninput="recalc()">
+    <div class="help">For BTTS: if you backed Yes, enter No odds. For Over/Under: enter the opposite.</div>
+  </div>
+  <div id="hedgeLay" style="display:none">
+    <label>Lay odds (Betfair Exchange — current)</label>
+    <input type="number" step="0.01" id="layOdds" placeholder="e.g. 1.17" oninput="recalc()">
+    <div class="help">Betfair's lay price for your original side. Adds the exchange commission below.</div>
+    <label>Exchange commission %</label>
+    <input type="number" step="0.1" id="commission" value="2" oninput="recalc()">
+  </div>
+</div>
+
+<div id="output"></div>
+
+<details>
+  <summary>How the math works</summary>
+  <div class="help" style="margin-top:8px">
+    <strong>3-way / 2-way back-hedge:</strong> set each opposite-leg stake so that the return on each outcome equals the original side's return. Stake on outcome i = (orig_stake × orig_odds) ÷ outcome_i_odds. Total cost = sum of stakes. Locked profit = (orig_stake × orig_odds) − total_cost. Same profit regardless of which outcome lands.<br><br>
+    <strong>Betfair lay:</strong> lay_stake = (orig_stake × orig_odds) ÷ (lay_odds − commission_factor). Lay liability = lay_stake × (lay_odds − 1). Locked profit ≈ orig_stake × orig_odds − orig_stake − lay_liability + lay_stake × (1 − commission).<br><br>
+    The number of pounds you actually have at risk is the total of all stakes (3-way/2-way) or original stake + lay liability (Betfair). Calculator shows both.
+  </div>
+</details>
+
+<div class="footer">Falcon Protect Calc · saved offline-ready · v1</div>
+
+<script>
+let mode = '3way';
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  document.getElementById('hedge3way').style.display = m === '3way' ? 'block' : 'none';
+  document.getElementById('hedge2way').style.display = m === '2way' ? 'block' : 'none';
+  document.getElementById('hedgeLay').style.display = m === 'lay' ? 'block' : 'none';
+  const helps = {
+    '3way': 'Back the other 2 outcomes on a normal bookie (Bet365, Betway, etc.)',
+    '2way': 'Back the opposite outcome on a normal bookie. Locks profit if hedge odds high enough.',
+    'lay':  'Lay your original side on Betfair Exchange. Most efficient if available.'
+  };
+  document.getElementById('modeHelp').textContent = helps[m];
+  recalc();
+}
+
+function num(id) {
+  const v = parseFloat(document.getElementById(id).value);
+  return isNaN(v) ? null : v;
+}
+
+function fmtGBP(x) {
+  if (x === null || isNaN(x)) return '—';
+  if (Math.abs(x) >= 100) return '£' + x.toFixed(0);
+  return '£' + x.toFixed(2);
+}
+
+function fmtPct(x) {
+  if (x === null || isNaN(x)) return '—';
+  return (x >= 0 ? '+' : '') + x.toFixed(1) + '%';
+}
+
+function recalc() {
+  const out = document.getElementById('output');
+  const O = num('origOdds');
+  const S = num('origStake');
+  if (!O || !S || O <= 1.0 || S <= 0) {
+    out.innerHTML = '<div class="errmsg" style="padding:12px">Enter your original odds (>1.0) and stake (>0).</div>';
+    return;
+  }
+  const targetReturn = S * O;
+
+  if (mode === '3way') {
+    const oD = num('drawOdds'), oA = num('awayOdds');
+    if (!oD || !oA || oD <= 1.0 || oA <= 1.0) {
+      out.innerHTML = '<div class="errmsg" style="padding:12px">Enter both Draw and other-team odds (>1.0).</div>';
+      return;
+    }
+    const xD = targetReturn / oD;
+    const xA = targetReturn / oA;
+    const totalCost = S + xD + xA;
+    const lockedProfit = targetReturn - totalCost;
+    const lockedPct = (lockedProfit / S) * 100;
+    out.innerHTML = renderResult({
+      legs: [
+        { label: 'Original (already placed)', val: fmtGBP(S) + ' @ ' + O.toFixed(2) },
+        { label: 'BACK the Draw', val: fmtGBP(xD) + ' @ ' + oD.toFixed(2) + '  (' + ((xD/S)*100).toFixed(1) + '% of orig)' },
+        { label: 'BACK the other team', val: fmtGBP(xA) + ' @ ' + oA.toFixed(2) + '  (' + ((xA/S)*100).toFixed(1) + '% of orig)' },
+      ],
+      totalCost, lockedProfit, lockedPct,
+      payoutOnAny: targetReturn,
+      bankrollLadder: true,
+    });
+  }
+  else if (mode === '2way') {
+    const oOpp = num('oppOdds');
+    if (!oOpp || oOpp <= 1.0) {
+      out.innerHTML = '<div class="errmsg" style="padding:12px">Enter opposite outcome odds (>1.0).</div>';
+      return;
+    }
+    const xOpp = targetReturn / oOpp;
+    const totalCost = S + xOpp;
+    const lockedProfit = targetReturn - totalCost;
+    const lockedPct = (lockedProfit / S) * 100;
+    out.innerHTML = renderResult({
+      legs: [
+        { label: 'Original (already placed)', val: fmtGBP(S) + ' @ ' + O.toFixed(2) },
+        { label: 'BACK the opposite', val: fmtGBP(xOpp) + ' @ ' + oOpp.toFixed(2) + '  (' + ((xOpp/S)*100).toFixed(1) + '% of orig)' },
+      ],
+      totalCost, lockedProfit, lockedPct,
+      payoutOnAny: targetReturn,
+      bankrollLadder: true,
+    });
+  }
+  else if (mode === 'lay') {
+    const oL = num('layOdds');
+    const com = (num('commission') || 0) / 100;
+    if (!oL || oL <= 1.0) {
+      out.innerHTML = '<div class="errmsg" style="padding:12px">Enter Betfair lay odds (>1.0).</div>';
+      return;
+    }
+    const layStake = targetReturn / (oL - com);
+    const layLiability = layStake * (oL - 1);
+    const profitIfOrigWins = (S * (O - 1)) - layLiability;
+    const profitIfLayWins = layStake * (1 - com) - S;
+    const lockedProfit = Math.min(profitIfOrigWins, profitIfLayWins);
+    const lockedPct = (lockedProfit / S) * 100;
+    const totalAtRisk = S + layLiability;
+    out.innerHTML = renderResult({
+      legs: [
+        { label: 'Original (already placed)', val: fmtGBP(S) + ' @ ' + O.toFixed(2) },
+        { label: 'LAY on Betfair', val: fmtGBP(layStake) + ' @ ' + oL.toFixed(2) + '  (liability ' + fmtGBP(layLiability) + ')' },
+        { label: 'Commission rate', val: (com*100).toFixed(1) + '%' },
+        { label: 'If original wins', val: fmtGBP(profitIfOrigWins) },
+        { label: 'If lay wins', val: fmtGBP(profitIfLayWins) },
+      ],
+      totalCost: totalAtRisk,
+      lockedProfit, lockedPct,
+      payoutOnAny: null,
+      bankrollLadder: true,
+      isLay: true,
+    });
+  }
+}
+
+function renderResult(r) {
+  const isPositive = r.lockedProfit > 0;
+  const headerEmoji = isPositive ? '🟢' : '🔴';
+  const headerText = isPositive ? 'GUARANTEED PROFIT' : 'NEGATIVE LOCK — would lose money';
+  const klass = isPositive ? 'result' : 'result bad';
+
+  let legHtml = r.legs.map(l =>
+    `<div class="leg"><span class="leg-label">${l.label}</span><span class="leg-val">${l.val}</span></div>`
+  ).join('');
+
+  let ladderHtml = '';
+  if (r.bankrollLadder && isPositive) {
+    const S = parseFloat(document.getElementById('origStake').value);
+    if (S > 0) {
+      const examples = [5, 10, 20, 50, 100];
+      ladderHtml = '<div class="ladder">';
+      for (const ex of examples) {
+        const pct = r.lockedProfit / S;
+        ladderHtml += `<div class="ladder-row"><span>If you'd staked £${ex}</span><span class="v">→ +${fmtGBP(ex*pct)}</span></div>`;
+      }
+      ladderHtml += '</div>';
+    }
+  }
+
+  const totalLine = r.isLay
+    ? `<div class="total-row"><span class="leg-label">Total at risk</span><span class="leg-val">${fmtGBP(r.totalCost)}</span></div>`
+    : `<div class="total-row"><span class="leg-label">Total cost (all stakes)</span><span class="leg-val">${fmtGBP(r.totalCost)}</span></div>` +
+      `<div class="total-row"><span class="leg-label">Payout on any winner</span><span class="leg-val">${fmtGBP(r.payoutOnAny)}</span></div>`;
+
+  return `
+    <div class="${klass}">
+      <h2>${headerEmoji} ${headerText}</h2>
+      ${legHtml}
+      ${totalLine}
+      <div class="total-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px">
+        <span class="leg-label">LOCKED PROFIT</span>
+        <span class="leg-val" style="font-size:18px">${fmtGBP(r.lockedProfit)} (${fmtPct(r.lockedPct)} of stake)</span>
+      </div>
+      ${ladderHtml}
+    </div>
+  `;
+}
+
+setMode('3way');
+</script>
+
+</body>
+</html>

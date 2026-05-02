@@ -332,9 +332,13 @@ const TRANSLATIONS = {
     how_body:        "<strong>3-way / 2-way back-hedge:</strong> set each opposite-leg stake so that the return on each outcome equals the original side's return. Stake on outcome i = (orig_stake × orig_odds) ÷ outcome_i_odds. Total cost = sum of stakes. Locked profit = (orig_stake × orig_odds) − total_cost. Same profit regardless of which outcome lands.<br><br><strong>Betfair lay:</strong> lay_stake = (orig_stake × orig_odds) ÷ (lay_odds − commission_factor). Lay liability = lay_stake × (lay_odds − 1). Locked profit ≈ orig_stake × orig_odds − orig_stake − lay_liability + lay_stake × (1 − commission).<br><br>The number of pounds you actually have at risk is the total of all stakes (3-way/2-way) or original stake + lay liability (Betfair). Calculator shows both.",
     footer:         "Falcon Protect Calc · saved offline-ready · v2",
     // result rendering
-    res_guaranteed:  "GUARANTEED PROFIT",
-    res_negative:    "NEGATIVE LOCK — would lose money",
+    res_guaranteed:  "🟢 GUARANTEED PROFIT",
+    res_recovery:    "🚨 STAKE RECOVERY",
+    res_overhedge:   "🔴 OVERHEDGED — locking BIGGER loss than original. Don't do this.",
     res_locked:      "LOCKED PROFIT",
+    res_locked_loss: "LOCKED LOSS",
+    res_saved_of:    "saved",
+    res_of:          "of",
     res_total_cost:  "Total cost (all stakes)",
     res_total_risk:  "Total at risk",
     res_payout:      "Payout on any winner",
@@ -400,9 +404,13 @@ const TRANSLATIONS = {
     how_summary:     "Si funksionon matematika",
     how_body:        "<strong>Mbrojtje 3-rezultate / 2-rezultate:</strong> vendos secilin bast kundër ashtu që kthimi në secilin rezultat të jetë i barabartë me kthimin e bastit origjinal. Basti për rezultatin i = (vlera_origjinale × koficenti_origjinal) ÷ koficenti_e_rezultatit_i. Kostoja totale = shuma e bastsve. Fitimi i bllokuar = (vlera_origjinale × koficenti_origjinal) − kostoja_totale. I njëjti fitim, pa marrë parasysh cili rezultat fiton.<br><br><strong>Betfair lay:</strong> basti_lay = (vlera × koficenti) ÷ (koficenti_lay − komisioni). Detyrimi lay = basti_lay × (koficenti_lay − 1). Fitimi i bllokuar ≈ vlera × koficenti − vlera − detyrimi_lay + basti_lay × (1 − komisioni).<br><br>Shuma që në të vërtetë rrezikohet është totali i të gjitha bastsve (3-rezultate/2-rezultate) ose vlera origjinale + detyrimi lay (Betfair). Llogaritësi i tregon të dyja.",
     footer:         "Falcon Protect Calc · ruajtur pa internet · v2",
-    res_guaranteed:  "FITIM I GARANTUAR",
-    res_negative:    "BLLOKIM NEGATIV — do të humbiste para",
+    res_guaranteed:  "🟢 FITIM I GARANTUAR",
+    res_recovery:    "🚨 RIKUPERIM I SHUMËS",
+    res_overhedge:   "🔴 MBI-MBROJTUR — po bllokon HUMBJE më të madhe se origjinali. Mos e bëj.",
     res_locked:      "FITIMI I BLLOKUAR",
+    res_locked_loss: "HUMBJA E BLLOKUAR",
+    res_saved_of:    "kursyer",
+    res_of:          "nga",
     res_total_cost:  "Kostoja totale (të gjitha bastet)",
     res_total_risk:  "Totali që rrezikohet",
     res_payout:      "Pagesa kur fiton ndonjë rezultat",
@@ -616,10 +624,32 @@ function recalc() {
 }
 
 function renderResult(r) {
+  const S = parseFloat(document.getElementById('origStake').value) || 0;
+  // Auto-detect mode based on lockedProfit sign:
+  //   positive → LOCK_PROFIT (you're winning, banking guaranteed gain)
+  //   negative but > -stake → STAKE_RECOVERY (you're losing, salvaging)
+  //   negative AND > stake (extra-bad) → OVERHEDGE warning
   const isPositive = r.lockedProfit > 0;
-  const headerEmoji = isPositive ? '🟢' : '🔴';
-  const headerText = isPositive ? t('res_guaranteed') : t('res_negative');
-  const klass = isPositive ? 'result' : 'result bad';
+  const isOverhedged = r.lockedProfit < -S && S > 0;
+  let headerText, klass, bottomLabel, bottomValue;
+  if (isPositive) {
+    headerText = t('res_guaranteed');
+    klass = 'result';
+    bottomLabel = t('res_locked');
+    bottomValue = `${fmtGBP(r.lockedProfit)} (${fmtPct(r.lockedPct)} ${t('res_of_stake')})`;
+  } else if (isOverhedged) {
+    headerText = t('res_overhedge');
+    klass = 'result bad';
+    bottomLabel = t('res_locked_loss');
+    bottomValue = `${fmtGBP(r.lockedProfit)} (${fmtPct(r.lockedPct)} ${t('res_of_stake')})`;
+  } else {
+    // STAKE_RECOVERY: locked loss is smaller than original stake
+    headerText = t('res_recovery');
+    klass = 'result bad';
+    bottomLabel = t('res_locked_loss');
+    const recovered = S + r.lockedProfit;  // r.lockedProfit is negative here
+    bottomValue = `${fmtGBP(r.lockedProfit)} (${t('res_saved_of')} ${fmtGBP(recovered)} ${t('res_of')} ${fmtGBP(S)})`;
+  }
 
   let legHtml = r.legs.map(l =>
     `<div class="leg"><span class="leg-label">${l.label}</span><span class="leg-val">${l.val}</span></div>`
@@ -627,7 +657,6 @@ function renderResult(r) {
 
   let ladderHtml = '';
   if (r.bankrollLadder && isPositive) {
-    const S = parseFloat(document.getElementById('origStake').value);
     if (S > 0) {
       const examples = [5, 10, 20, 50, 100];
       ladderHtml = '<div class="ladder">';
@@ -646,12 +675,12 @@ function renderResult(r) {
 
   return `
     <div class="${klass}">
-      <h2>${headerEmoji} ${headerText}</h2>
+      <h2>${headerText}</h2>
       ${legHtml}
       ${totalLine}
       <div class="total-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px">
-        <span class="leg-label">${t('res_locked')}</span>
-        <span class="leg-val" style="font-size:18px">${fmtGBP(r.lockedProfit)} (${fmtPct(r.lockedPct)} ${t('res_of_stake')})</span>
+        <span class="leg-label">${bottomLabel}</span>
+        <span class="leg-val" style="font-size:18px">${bottomValue}</span>
       </div>
       ${ladderHtml}
     </div>

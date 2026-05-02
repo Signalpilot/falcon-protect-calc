@@ -173,6 +173,15 @@
   .errmsg { color: var(--red); font-size: 12px; margin-top: 6px; }
   details { margin-top: 12px; }
   summary { cursor: pointer; color: var(--muted); font-size: 12px; padding: 4px 0; }
+  .implied {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    font-family: -apple-system, BlinkMacSystemFont, monospace;
+  }
+  .implied.has-val { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -198,7 +207,7 @@
 <div class="panel">
   <div class="section-title" data-i18n="sec2">2. Your original bet</div>
   <label data-i18n="lbl_orig_odds">Original side won at odds</label>
-  <input type="number" step="0.01" id="origOdds" placeholder="e.g. 1.65" oninput="recalc()">
+  <input type="number" step="0.01" id="origOdds" placeholder="e.g. 1.65" oninput="recalc()"><span class="implied" id="impl_origOdds"></span>
   <div class="help" data-i18n="help_orig_odds">Use YOUR actual matched price. Not the alert's quoted price — they often differ.</div>
 
   <label data-i18n="lbl_orig_stake">Stake placed (£)</label>
@@ -209,18 +218,18 @@
   <div class="section-title" data-i18n="sec3">3. Current odds on opposite outcomes</div>
   <div id="hedge3way">
     <label data-i18n="lbl_draw">Draw odds (current)</label>
-    <input type="number" step="0.01" id="drawOdds" placeholder="e.g. 8.40" oninput="recalc()">
+    <input type="number" step="0.01" id="drawOdds" placeholder="e.g. 8.40" oninput="recalc()"><span class="implied" id="impl_drawOdds"></span>
     <label data-i18n="lbl_other">Other team odds (current)</label>
-    <input type="number" step="0.01" id="awayOdds" placeholder="e.g. 40.00" oninput="recalc()">
+    <input type="number" step="0.01" id="awayOdds" placeholder="e.g. 40.00" oninput="recalc()"><span class="implied" id="impl_awayOdds"></span>
   </div>
   <div id="hedge2way" style="display:none">
     <label data-i18n="lbl_opp">Opposite outcome odds (current)</label>
-    <input type="number" step="0.01" id="oppOdds" placeholder="e.g. 1.95" oninput="recalc()">
+    <input type="number" step="0.01" id="oppOdds" placeholder="e.g. 1.95" oninput="recalc()"><span class="implied" id="impl_oppOdds"></span>
     <div class="help" data-i18n="help_opp">For BTTS: if you backed Yes, enter No odds. For Over/Under: enter the opposite.</div>
   </div>
   <div id="hedgeLay" style="display:none">
     <label data-i18n="lbl_lay">Lay odds (Betfair Exchange — current)</label>
-    <input type="number" step="0.01" id="layOdds" placeholder="e.g. 1.17" oninput="recalc()">
+    <input type="number" step="0.01" id="layOdds" placeholder="e.g. 1.17" oninput="recalc()"><span class="implied" id="impl_layOdds"></span>
     <div class="help" data-i18n="help_lay">Betfair's lay price for your original side. Adds the exchange commission below.</div>
     <label data-i18n="lbl_com">Exchange commission %</label>
     <input type="number" step="0.1" id="commission" value="2" oninput="recalc()">
@@ -238,7 +247,7 @@
       </div>
       <div>
         <label data-i18n="lbl_at_odds">at odds</label>
-        <input type="number" step="0.01" id="priorDrawOdds" placeholder="e.g. 3.20" oninput="recalc()">
+        <input type="number" step="0.01" id="priorDrawOdds" placeholder="e.g. 3.20" oninput="recalc()"><span class="implied" id="impl_priorDrawOdds"></span>
       </div>
     </div>
     <div class="row">
@@ -248,7 +257,7 @@
       </div>
       <div>
         <label data-i18n="lbl_at_odds">at odds</label>
-        <input type="number" step="0.01" id="priorAwayOdds" placeholder="e.g. 4.50" oninput="recalc()">
+        <input type="number" step="0.01" id="priorAwayOdds" placeholder="e.g. 4.50" oninput="recalc()"><span class="implied" id="impl_priorAwayOdds"></span>
       </div>
     </div>
   </div>
@@ -260,7 +269,7 @@
       </div>
       <div>
         <label data-i18n="lbl_at_odds">at odds</label>
-        <input type="number" step="0.01" id="priorOppOdds" placeholder="e.g. 2.20" oninput="recalc()">
+        <input type="number" step="0.01" id="priorOppOdds" placeholder="e.g. 2.20" oninput="recalc()"><span class="implied" id="impl_priorOppOdds"></span>
       </div>
     </div>
   </div>
@@ -272,7 +281,7 @@
       </div>
       <div>
         <label data-i18n="lbl_play_odds">at lay odds</label>
-        <input type="number" step="0.01" id="priorLayOdds" placeholder="e.g. 1.40" oninput="recalc()">
+        <input type="number" step="0.01" id="priorLayOdds" placeholder="e.g. 1.40" oninput="recalc()"><span class="implied" id="impl_priorLayOdds"></span>
       </div>
     </div>
   </div>
@@ -512,7 +521,27 @@ function fmtPct(x) {
   return (x >= 0 ? '+' : '') + x.toFixed(1) + '%';
 }
 
+function updateAllImplied() {
+  const ids = ['origOdds','drawOdds','awayOdds','oppOdds','layOdds',
+               'priorDrawOdds','priorAwayOdds','priorOppOdds','priorLayOdds'];
+  for (const iid of ids) {
+    const inp = document.getElementById(iid);
+    const span = document.getElementById('impl_' + iid);
+    if (!inp || !span) continue;
+    const v = parseFloat(inp.value);
+    if (v && v > 1.0) {
+      const pct = (1 / v) * 100;
+      span.textContent = '→ ' + pct.toFixed(0) + '% ' + (lang === 'sq' ? 'shanse të nënkuptuara' : 'implied chance');
+      span.classList.add('has-val');
+    } else {
+      span.textContent = '';
+      span.classList.remove('has-val');
+    }
+  }
+}
+
 function recalc() {
+  updateAllImplied();
   const out = document.getElementById('output');
   const O = num('origOdds');
   const S = num('origStake');
